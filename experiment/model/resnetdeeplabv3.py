@@ -107,7 +107,6 @@ class ResNet(nn.Module):
 
     def __init__(self, block, layers, mg=[1, 2, 4], output_stride=8):
         self.inplanes = 64
-        self.expansion = block.expansion
         super(ResNet, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
                                bias=False, dilation=1)
@@ -132,7 +131,7 @@ class ResNet(nn.Module):
             block, 512, layers[3], stride=1, dilation=2, mg=mg)
         # self.avgpool = nn.AvgPool2d(7, stride=1)
         # self.fc = nn.Linear(512 * block.expansion, num_classes)
-
+        self.outchannels = 512 * block.expansion
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(

@@ -20,29 +20,29 @@ def freeze_bn(m):
     if classname.find('BatchNorm') != -1:
         m.eval()
 
-# class MS_DeepLabV3_ResNet(nn.Module):    
-#     def __init__(self, msclasses_num=2, feature_channels=256, 
-#                  rates=[6,12,18], mg=[1, 2, 4], 
-#                  resnettype=resnet50, pretrained=True):
 
-class DeepLabV3_ResNet(nn.Module):
+class DeepLabV3Model(nn.Module):
 
-    def __init__(self, classes_num=2, feature_channels=256, 
-                 rates=[6,12,18], mg=[1, 2, 4], output_stride=8,
-                 resnettype=resnet50, pretrained=True):
-        
-        super(DeepLabV3_ResNet, self).__init__()
-        self.conv = resnettype(pretrained=pretrained, mg=mg, output_stride=output_stride)
-        convchannels = self.conv.expansion * 512
-        self.aspp = ASPP(input_channels=convchannels, feature_channels=feature_channels, rates=rates)
+    def __init__(self, classes_num=2, feature_channels=256,
+                 rates=[6, 12, 18], mg=[1, 2, 4], output_stride=8,
+                 basenet=resnet50, pretrained=True):
+
+        super(DeepLabV3Model, self).__init__()
+        self.conv = basenet(pretrained=pretrained, mg=mg,
+                            output_stride=output_stride)
+
+        self.aspp = ASPP(input_channels=self.conv.outchannels,
+                         feature_channels=feature_channels,
+                         rates=rates)
         self.global_feature = nn.Sequential(
             nn.AdaptiveAvgPool2d((1, 1)),
-            nn.Conv2d(convchannels, feature_channels, kernel_size=1),
+            nn.Conv2d(self.conv.outchannels, feature_channels, kernel_size=1),
             nn.BatchNorm2d(feature_channels),
             nn.ReLU(inplace=True))
-        
+
         self.feature = nn.Sequential(
-            nn.Conv2d(feature_channels*(2+len(rates)), feature_channels, kernel_size=1),
+            nn.Conv2d(feature_channels*(2+len(rates)),
+                      feature_channels, kernel_size=1),
             nn.BatchNorm2d(feature_channels),
             # nn.ReLU()
         )
@@ -53,16 +53,17 @@ class DeepLabV3_ResNet(nn.Module):
         x = self.conv(x)
         afs = self.aspp(x)
         gf = self.global_feature(x)
-        gf = F.upsample(gf, size=x.size()[2:], mode="bilinear", align_corners=True)
+        gf = F.upsample(gf, size=x.size()[2:],
+                        mode="bilinear", align_corners=True)
         afs.append(gf)
         x = torch.cat(afs, dim=1)
         x = self.feature(x)
         x = self.cls_layer(x)
         return x
-    
+
     def freeze_bn(self):
         self.apply(freeze_bn)
-        
+
 # class Resnet_FCN(nn.Module):
 
 #     def __init__(self, classes_num=1000, feature_channels=512, resnettype=resnet18):
