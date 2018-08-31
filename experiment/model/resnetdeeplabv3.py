@@ -118,7 +118,7 @@ class ResNet(nn.Module):
             self.layer1 = self._make_layer(
                 block, 64, layers[0], stride=1, dilation=1)
         elif output_stride == 16:
-            self.layer2 = self._make_layer(
+            self.layer1 = self._make_layer(
                 block, 64, layers[0], stride=2, dilation=1)
         else:
             raise "Wrong `output_stride` %d"%(output_stride)
