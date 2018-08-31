@@ -164,6 +164,9 @@ def train_deeplabv3(cfg, logprint=print):
         sample[1] = label
         label = label.cuda(cfg.device)
         loss = criterion(score, label)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
         return loss, score
 
     def test_process(sample):
