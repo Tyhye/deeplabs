@@ -24,6 +24,7 @@ from .model.resnetdeeplabv3 import resnet101, resnet152
 from .process.iterprocessor import IterProcessor
 from .dataload.dataloader import SS_train_val_data_loader, SS_eval_data_loader
 from .dataload.datafunc import resize_tensor
+from .meter.mioumeter import mIOUMeter
 
 
 def get_params(Net, cfg):
@@ -71,6 +72,7 @@ def train_deeplabv3(cfg, logprint=print):
     criterion = nn.CrossEntropyLoss(ignore_index=255)
     meter_loss = tnt.meter.AverageValueMeter()
     meter_accuracy = tnt.meter.ClassErrorMeter(accuracy=True)
+    # meter_mIOU = mIOUMeter()
 
     save_name = "deeplabv3_%s_%d" % (cfg.basenet, cfg.output_stride)
     # ==========================================================================
