@@ -14,30 +14,35 @@ import torch
 
 class mIOUMeter(object):
 
-    def __init__(self):
-        self.mious = []
+    def __init__(self, classes_num):
+        self.classes_num = classes_num
         self.reset()
 
     def reset(self):
         '''Resets the meter to default settings.'''
-        self.mious.clear()
-
+        self.tps = [[]]*self.classes_num
+        self.ats = [[]]*self.classes_num
+        
     def add(self, output, target):
         if torch.is_tensor(output):
             output = output.cpu().squeeze().numpy()
+        classes_num = output.shape[1]
         output = np.argmax(output, axis=1)
         if torch.is_tensor(target):
             target = target.cpu().squeeze().numpy()
-        assert output.shape[0] == target.shape[0], "pred and target do not match"
-        classes_num = output.shape[1]
-        ious = []
+        assert output.shape == target.shape, "pred and target do not match"
         for idx in range(classes_num):
             TP = np.sum((output==idx)[target==idx])
             AT = np.sum(output==idx) + np.sum(target==idx) - TP
-            ious.append(iou)
-        ious = np.mean(np.stack(ious, axis=1), axis=1)
-        self.mious.extend(list(ious))
-
+            self.tps[idx].append(TP)
+            self.ats[idx].append(AT)
+        
     def value(self):
         '''Get the value of the meter in the current state.'''
-        return sum(self.mious) / len(self.mious)
+        ious = []
+        for idx in range(self.classes_num):
+            TP = sum(self.tps[idx])
+            AT = sum(self.ats[idx])
+            if AT != 0:
+                ious.append(TP/AT)
+            return sum(ious) / len(ious)

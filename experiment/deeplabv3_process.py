@@ -72,7 +72,7 @@ def train_deeplabv3(cfg, logprint=print):
     criterion = nn.CrossEntropyLoss(ignore_index=255)
     meter_loss = tnt.meter.AverageValueMeter()
     meter_accuracy = tnt.meter.ClassErrorMeter(accuracy=True)
-    # meter_mIOU = mIOUMeter()
+    meter_miou = mIOUMeter()
 
     save_name = "deeplabv3_%s_%d" % (cfg.basenet, cfg.output_stride)
     # ==========================================================================
@@ -189,9 +189,10 @@ def train_deeplabv3(cfg, logprint=print):
 
     def on_forward(state):
         score = state['output'].detach()
+        label = state['sample'][1]
+        meter_miou.add(score, label)
         score = score.permute(0, 2, 3, 1).contiguous()
         score = score.view(-1, score.size(3))
-        label = state['sample'][1]
         label = label.view(-1)
         meter_accuracy.add(score, label)
         meter_loss.add(state['loss'].data)
@@ -200,11 +201,12 @@ def train_deeplabv3(cfg, logprint=print):
         if not state['train']:
             return
         if (state['t']) % cfg.log_iters == 0:
+            train_miou = meter_miou.value()
             train_loss = meter_loss.value()[0]
             train_accuracy = meter_accuracy.value()[0]
             learning_rate = optimizer.param_groups[-1]['lr']
-            logprint('[iter %d] Training Loss: %.4f Train Accuracy: %.2f %% Learning rate: %f' %
-                     (state['t'], train_loss, train_accuracy, learning_rate))
+            logprint('[iter %d] Training Loss: %.4f LR: %f Accuracy: %.2f%% mIOU: %.2f%%' %
+                     (state['t'], train_loss, learning_rate, train_accuracy, train_miou*100))
             if cfg.withvisdom:
                 train_loss_logger.log(state['t'], train_loss)
                 train_acc_logger.log(state['t'], train_accuracy)
@@ -219,10 +221,11 @@ def train_deeplabv3(cfg, logprint=print):
         if state['t'] % cfg.val_iters == 0:
             Net.eval()
             processor.test(test_process, get_iterator(False))
+            val_miou = meter_miou.value()
             val_loss = meter_loss.value()[0]
             val_accuracy = meter_accuracy.value()[0]
-            logprint('[iter %d] Val Loss: %.4f Val Accuracy: %.2f %%' %
-                     (state['t'], val_loss, val_accuracy))
+            logprint('[iter %d] Val Loss: %.4f Accuracy: %.2f%% mIOU: %.2f%%' %
+                     (state['t'], val_loss, val_accuracy, val_miou*100))
 
     def on_end(state):
         pass
