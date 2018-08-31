@@ -216,7 +216,7 @@ def train_deeplabv3(cfg, logprint=print):
 
         if (state['t']) % cfg.snap_iters == 0:
             torch.save(Net.state_dict(), '%s/%s_iter_%d.pt' %
-                       (cfg.state_dict_dir, save_name, state['t']))
+                       (cfg.snap_dir, save_name, state['t']))
 
         if state['t'] % cfg.val_iters == 0:
             Net.eval()
