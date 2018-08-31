@@ -72,7 +72,7 @@ def train_deeplabv3(cfg, logprint=print):
     criterion = nn.CrossEntropyLoss(ignore_index=255)
     meter_loss = tnt.meter.AverageValueMeter()
     meter_accuracy = tnt.meter.ClassErrorMeter(accuracy=True)
-    meter_miou = mIOUMeter()
+    meter_miou = mIOUMeter(cfg.classes_num)
 
     save_name = "deeplabv3_%s_%d" % (cfg.basenet, cfg.output_stride)
     # ==========================================================================
@@ -125,6 +125,7 @@ def train_deeplabv3(cfg, logprint=print):
     def reset_meters():
         meter_loss.reset()
         meter_accuracy.reset()
+        meter_miou.reset()
 
     # ==========================================================================
 
@@ -226,6 +227,7 @@ def train_deeplabv3(cfg, logprint=print):
             val_accuracy = meter_accuracy.value()[0]
             logprint('[iter %d] Val Loss: %.4f Accuracy: %.2f%% mIOU: %.2f%%' %
                      (state['t'], val_loss, val_accuracy, val_miou*100))
+            Net.train(freeze_bn_able=cfg.freeze_bn)
 
     def on_end(state):
         pass
@@ -238,4 +240,5 @@ def train_deeplabv3(cfg, logprint=print):
     processor.hooks['on_end_iter'] = on_end_iter
     processor.hooks['on_end'] = on_end
 
+    Net.train(freeze_bn_able=cfg.freeze_bn)
     processor.train(train_process, get_iterator(True), cfg.max_iters)

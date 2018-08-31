@@ -61,8 +61,10 @@ class DeepLabV3Model(nn.Module):
         x = self.cls_layer(x)
         return x
 
-    def freeze_bn(self):
-        self.apply(freeze_bn)
+    def train(self, trainable=True, freeze_bn_able=False):
+        super(DeepLabV3Model, self).train(trainable)
+        if trainable and freeze_bn_able:
+            self.apply(freeze_bn_able)
 
 # class Resnet_FCN(nn.Module):
 
