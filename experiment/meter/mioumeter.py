@@ -25,12 +25,12 @@ class mIOUMeter(object):
         
     def add(self, output, target):
         if torch.is_tensor(output):
-            output = output.cpu().squeeze().numpy()
+            output = output.cpu().numpy()
         classes_num = output.shape[1]
         output = np.argmax(output, axis=1)
         if torch.is_tensor(target):
-            target = target.cpu().squeeze().numpy()
-        assert output.shape == target.shape, "pred and target do not match"
+            target = target.cpu().numpy()
+        assert output.shape == target.shape, "pred and target do not match %s %s"%(output.shape, target.shape)
         for idx in range(classes_num):
             TP = np.sum((output==idx)[target==idx])
             AT = np.sum(output==idx) + np.sum(target==idx) - TP
